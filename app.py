@@ -2,39 +2,48 @@ import streamlit as st
 
 st.set_page_config(page_title="Concrete Mix Comparison", layout="centered")
 
-# แก้ไข CSS และเพิ่มสไตล์ตาราง
+# แก้ไข CSS สำหรับความสวยงาม
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
     .stMetric { background-color: #ffffff; padding: 10px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .developer-text {
+        color: #6c757d;
+        font-size: 14px;
+        margin-top: -15px;
+        margin-bottom: 20px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
+# --- ส่วนหัวข้อและเครดิต ---
 st.title("🏗️ Mix Design Comparison")
-st.write("เปรียบเทียบการคำนวณแบบ Dry Base vs Wet Base")
+st.markdown('<p class="developer-text">Develop By Ardharn 2026</p>', unsafe_allow_html=True)
+
+st.write("เครื่องมือเปรียบเทียบการคำนวณสัดส่วนผสมแบบ Dry Base vs Wet Base")
 
 # --- 1. ส่วนการรับข้อมูล ---
 with st.expander("📝 ปรับแต่งสูตรและค่าความชื้น", expanded=True):
     col1, col2 = st.columns(2)
     with col1:
-        c = st.number_input("Cement (kg)", value=300.0)
-        fa = st.number_input("Fly Ash (kg)", value=100.0)
-        w_design = st.number_input("Water (kg)", value=180.0)
+        c = st.number_input("Cement (kg)", value=300.0, step=1.0)
+        fa = st.number_input("Fly Ash (kg)", value=100.0, step=1.0)
+        w_design = st.number_input("Water (kg)", value=180.0, step=1.0)
     with col2:
-        s_dry = st.number_input("Sand Dry (kg)", value=800.0)
-        r_dry = st.number_input("Rock Dry (kg)", value=1100.0)
+        s_dry = st.number_input("Sand Dry (kg)", value=800.0, step=1.0)
+        r_dry = st.number_input("Rock Dry (kg)", value=1100.0, step=1.0)
         ms_pct = st.number_input("Moisture Sand (%)", value=3.0, step=0.1)
         mr_pct = st.number_input("Moisture Rock (%)", value=1.0, step=0.1)
 
 # --- 2. ส่วนการคำนวณ ---
-# Dry Base logic
+# Dry Base logic: W_actual = W_dry * (1 + MC%)
 s_dry_base = s_dry * (1 + ms_pct / 100)
 r_dry_base = r_dry * (1 + mr_pct / 100)
 w_net_dry = w_design - ((s_dry_base - s_dry) + (r_dry_base - r_dry))
 
-# Wet Base logic
-s_wet_base = s_dry / (1 - ms_pct / 100)
-r_wet_base = r_dry / (1 - mr_pct / 100)
+# Wet Base logic: W_actual = W_dry / (1 - MC%)
+s_wet_base = s_dry / (1 - ms_pct / 100) if ms_pct < 100 else 0
+r_wet_base = r_dry / (1 - mr_pct / 100) if mr_pct < 100 else 0
 w_net_wet = w_design - ((s_wet_base - s_dry) + (r_wet_base - r_dry))
 
 # --- 3. การแสดงผลแบบเปรียบเทียบ ---
@@ -44,13 +53,13 @@ st.divider()
 tab1, tab2 = st.tabs(["📊 ตารางเปรียบเทียบ", "💡 สรุปความแตกต่าง"])
 
 with tab1:
-    st.subheader("เปรียบเทียบน้ำหนักชั่งจริง (Actual Weight)")
+    st.subheader("น้ำหนักที่ต้องชั่งจริง (Actual Weight)")
     
     # สร้าง List ข้อมูลเพื่อทำตาราง
     comparison_table = {
-        "Material": ["Cement", "Fly Ash", "Sand", "Rock", "Water (Net)"],
-        "Dry Base (kg)": [f"{c:.2f}", f"{fa:.2f}", f"{s_dry_base:.2f}", f"{r_dry_base:.2f}", f"{w_net_dry:.2f}"],
-        "Wet Base (kg)": [f"{c:.2f}", f"{fa:.2f}", f"{s_wet_base:.2f}", f"{r_wet_base:.2f}", f"{w_net_wet:.2f}"]
+        "Material": ["Cement (ปูน)", "Fly Ash (เถ้าลอย)", "Sand (ทรายเปียก)", "Rock (หินเปียก)", "Water (น้ำเติมจริง)"],
+        "Dry Base (kg)": [f"{c:,.1f}", f"{fa:,.1f}", f"{s_dry_base:,.1f}", f"{r_dry_base:,.1f}", f"{w_net_dry:,.1f}"],
+        "Wet Base (kg)": [f"{c:,.1f}", f"{fa:,.1f}", f"{s_wet_base:,.1f}", f"{r_wet_base:,.1f}", f"{w_net_wet:,.1f}"]
     }
     st.table(comparison_table)
     
@@ -63,11 +72,11 @@ with tab1:
     c2.metric("Total (Wet Base)", f"{total_wet:,.1f}")
 
 with tab2:
-    st.info("""
-    **ความแตกต่างที่คุณจะพบ:**
-    1. **Sand/Rock:** วิธี Wet Base จะให้ค่าน้ำหนักที่ 'สูงกว่า' Dry Base เล็กน้อยเสมอ
-    2. **Water:** วิธี Wet Base จะสั่งให้คุณ 'ลดน้ำ' ลงมากกว่า Dry Base
-    3. **ความนิยม:** ส่วนใหญ่ห้อง Lab และโรงโม่ในไทยอ้างอิง **Dry Base** เป็นหลักครับ
+    st.info(f"""
+    **ข้อมูลทางเทคนิค:**
+    - **Water/Binder Ratio:** {w_design/(c+fa) if (c+fa) > 0 else 0:.2f}
+    - **ส่วนต่างน้ำหนัก (Sand):** วิธี Wet Base จะชั่งทรายมากกว่า Dry Base อยู่ {s_wet_base - s_dry_base:.2f} kg
+    - **ส่วนต่างน้ำหนัก (Rock):** วิธี Wet Base จะชั่งหินมากกว่า Dry Base อยู่ {r_wet_base - r_dry_base:.2f} kg
     """)
 
-st.caption("⚠️ อย่าลืมเช็คหน่วยให้เป็น kg/m³ ทุกครั้งก่อนคำนวณ")
+st.caption("Developed By Ardharn 2026 | Concrete Technology Tools")
