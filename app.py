@@ -30,7 +30,7 @@ with st.expander("📝 ปรับแต่งสูตรและค่าค
         s_dry = st.number_input("Sand Dry (kg)", value=800.0, step=1.0)
         r_dry = st.number_input("Rock Dry (kg)", value=1100.0, step=1.0)
         ms_pct = st.number_input("Moisture Sand (%)", value=3.0, step=0.1)
-        mr_pct = st.number_input("Moisture Rock (%)", value=1.0, step=0.1)
+        mr_pct = st.number_input("Moisture Rock (%)", value=0.0, step=0.1)
 
 # --- 2. ส่วนการคำนวณ ---
 # Dry Base logic
